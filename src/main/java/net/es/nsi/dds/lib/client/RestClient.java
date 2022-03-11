@@ -1,27 +1,30 @@
 package net.es.nsi.dds.lib.client;
 
+import jakarta.ws.rs.client.Client;
+import jakarta.ws.rs.client.ClientBuilder;
+import jakarta.ws.rs.client.ClientRequestContext;
+import jakarta.ws.rs.client.ClientResponseContext;
+import jakarta.ws.rs.client.ClientResponseFilter;
+import jakarta.ws.rs.client.Entity;
+import jakarta.ws.rs.core.GenericEntity;
+import jakarta.ws.rs.core.MultivaluedMap;
+import jakarta.ws.rs.core.Response;
+import jakarta.xml.bind.JAXBElement;
 import java.io.IOException;
 import java.io.InputStream;
 import java.security.KeyManagementException;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
+import java.security.NoSuchProviderException;
 import java.security.UnrecoverableKeyException;
 import java.security.cert.CertificateException;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.SSLContext;
-import javax.ws.rs.client.Client;
-import javax.ws.rs.client.ClientBuilder;
-import javax.ws.rs.client.ClientRequestContext;
-import javax.ws.rs.client.ClientResponseContext;
-import javax.ws.rs.client.ClientResponseFilter;
-import javax.ws.rs.client.Entity;
-import javax.ws.rs.core.GenericEntity;
-import javax.ws.rs.core.MultivaluedMap;
-import javax.ws.rs.core.Response;
-import javax.xml.bind.JAXBElement;
 import net.es.nsi.common.constants.Nsi;
+import net.es.nsi.dds.lib.dao.HttpsContext;
+import net.es.nsi.dds.lib.dao.SecureType;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.config.Registry;
 import org.apache.http.config.RegistryBuilder;
@@ -32,6 +35,8 @@ import org.apache.http.conn.ssl.DefaultHostnameVerifier;
 import org.apache.http.conn.ssl.NoopHostnameVerifier;
 import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
 import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.glassfish.jersey.apache.connector.ApacheClientProperties;
 import org.glassfish.jersey.apache.connector.ApacheConnectorProvider;
 import org.glassfish.jersey.client.ClientConfig;
@@ -40,17 +45,14 @@ import org.glassfish.jersey.client.RequestEntityProcessing;
 import org.glassfish.jersey.logging.LoggingFeature;
 import org.glassfish.jersey.message.GZipEncoder;
 import org.glassfish.jersey.moxy.xml.MoxyXmlFeature;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  *
  * @author hacksaw
  */
+@lombok.Data
 public class RestClient {
-
-  private static final Logger log = LoggerFactory.getLogger(RestClient.class);
-  private final Client client;
+  private static final Logger LOG = LogManager.getLogger(RestClient.class);
 
   // Time for idle data timeout.
   private static final String TCP_SO_TIMEOUT = "tcpSoTimeout";
@@ -64,58 +66,96 @@ public class RestClient {
   private static final String TCP_CONNECT_REQUEST_TIMEOUT = "tcpConnectRequestTimeout";
   private static final int CONNECT_REQUEST_TIMEOUT = 30 * 1000;
 
-  public RestClient() {
-    ClientConfig clientConfig = configureClient();
-    client = ClientBuilder.newBuilder().withConfig(clientConfig).build();
-    client.property(LoggingFeature.LOGGING_FEATURE_LOGGER_LEVEL_CLIENT, Level.FINEST.getName());
+  // Connection provider pool configuration defaults.
+  private int maxConnPerRoute = 10;
+
+  private int maxConnTotal = 80;
+
+  // Security context.
+  private SecureType secure;
+
+  private final Client client;
+
+  /**
+   * Default constructor uses default configuration values.
+   *
+   * @throws java.security.KeyManagementException
+   * @throws java.security.NoSuchAlgorithmException
+   * @throws java.security.NoSuchProviderException
+   * @throws java.security.KeyStoreException
+   * @throws java.io.IOException
+   * @throws java.security.cert.CertificateException
+   * @throws java.security.UnrecoverableKeyException
+   */
+  public RestClient() throws KeyStoreException, IOException, NoSuchAlgorithmException, CertificateException,
+          KeyManagementException, UnrecoverableKeyException, NoSuchProviderException {
+    client = getRestClient();
   }
 
-  public RestClient(HttpsConfig config) throws KeyStoreException, IOException,
-          NoSuchAlgorithmException, CertificateException, KeyManagementException,
-          UnrecoverableKeyException {
-    ClientConfig clientConfig = configureSecureClient(config);
-    client = ClientBuilder.newBuilder().withConfig(clientConfig).build();
-    client.property(LoggingFeature.LOGGING_FEATURE_LOGGER_LEVEL_CLIENT, Level.FINEST.getName());
+  public RestClient(int maxConnPerRoute, int maxConnTotal, SecureType secure) throws KeyStoreException, IOException,
+          NoSuchAlgorithmException, CertificateException, KeyManagementException, UnrecoverableKeyException,
+          NoSuchProviderException {
+
+    this.maxConnPerRoute = maxConnPerRoute;
+    this.maxConnTotal = maxConnTotal;
+    this.secure = secure;
+
+    client = getRestClient();
   }
 
-  public static ClientConfig configureSecureClient(HttpsConfig config) {
-    HostnameVerifier hostnameVerifier;
-    if (config.isProduction()) {
-      hostnameVerifier = new DefaultHostnameVerifier();
-    } else {
-      hostnameVerifier = new NoopHostnameVerifier();
+  private Client getRestClient() throws KeyStoreException, IOException, NoSuchAlgorithmException, CertificateException,
+          KeyManagementException, UnrecoverableKeyException, NoSuchProviderException {
+    ClientConfig clientConfig;
+
+    if (secure != null) {
+      LOG.debug("[RestClient] initializing secure client");
+      HostnameVerifier hostnameVerifier;
+      if (secure.isProduction()) {
+        hostnameVerifier = new DefaultHostnameVerifier();
+      } else {
+        hostnameVerifier = new NoopHostnameVerifier();
+      }
+
+      HttpsContext.getInstance().load(secure);
+      SSLContext sslContext = HttpsContext.getInstance().getSSLContext();
+
+      LayeredConnectionSocketFactory sslSocketFactory = new SSLConnectionSocketFactory(sslContext, hostnameVerifier);
+      PlainConnectionSocketFactory socketFactory = PlainConnectionSocketFactory.getSocketFactory();
+
+      final Registry<ConnectionSocketFactory> registry = RegistryBuilder.<ConnectionSocketFactory>create()
+              .register("http", socketFactory)
+              .register("https", sslSocketFactory)
+              .build();
+
+      PoolingHttpClientConnectionManager connectionManager = new PoolingHttpClientConnectionManager(registry);
+      clientConfig = getClientConfig(connectionManager);
+    }
+    else {
+      LOG.debug("[RestClient] initializing insecure client");
+      PoolingHttpClientConnectionManager connectionManager = new PoolingHttpClientConnectionManager();
+      clientConfig = getClientConfig(connectionManager);
     }
 
-    SSLContext sslContext = config.getSSLContext();
-    LayeredConnectionSocketFactory sslSocketFactory = new SSLConnectionSocketFactory(sslContext, hostnameVerifier);
-    PlainConnectionSocketFactory socketFactory = PlainConnectionSocketFactory.getSocketFactory();
-
-    final Registry<ConnectionSocketFactory> registry = RegistryBuilder.<ConnectionSocketFactory>create()
-            .register("http", socketFactory)
-            .register("https", sslSocketFactory)
-            .build();
-
-    PoolingHttpClientConnectionManager connectionManager = new PoolingHttpClientConnectionManager(registry);
-    return getClientConfig(connectionManager);
+    Client c = ClientBuilder.newBuilder().withConfig(clientConfig).build();
+    c.property(LoggingFeature.LOGGING_FEATURE_LOGGER_LEVEL_CLIENT, Level.FINEST.getName());
+    c.property(LoggingFeature.LOGGING_FEATURE_VERBOSITY_CLIENT, LoggingFeature.Verbosity.PAYLOAD_ANY);
+    return c;
   }
 
-  public static ClientConfig configureClient() {
-    PoolingHttpClientConnectionManager connectionManager = new PoolingHttpClientConnectionManager();
-    return getClientConfig(connectionManager);
-  }
-
-  public static ClientConfig getClientConfig(PoolingHttpClientConnectionManager connectionManager) {
+  public ClientConfig getClientConfig(PoolingHttpClientConnectionManager connectionManager) {
     ClientConfig clientConfig = new ClientConfig();
 
     // We want to use the Apache connector for chunk POST support.
     clientConfig.connectorProvider(new ApacheConnectorProvider());
-    connectionManager.setDefaultMaxPerRoute(20);
-    connectionManager.setMaxTotal(80);
+    connectionManager.setDefaultMaxPerRoute(maxConnPerRoute);
+    connectionManager.setMaxTotal(maxConnTotal);
     connectionManager.closeIdleConnections(30, TimeUnit.SECONDS);
     clientConfig.property(ApacheClientProperties.CONNECTION_MANAGER, connectionManager);
 
     clientConfig.register(GZipEncoder.class);
     clientConfig.register(new MoxyXmlFeature());
+    clientConfig.register(new LoggingFeature(java.util.logging.Logger.getGlobal(), Level.ALL,
+            LoggingFeature.Verbosity.PAYLOAD_ANY, 10000));
     clientConfig.property(ClientProperties.REQUEST_ENTITY_PROCESSING, RequestEntityProcessing.CHUNKED);
 
     // Apache specific configuration.
@@ -141,7 +181,7 @@ public class RestClient {
 
   private static class FollowRedirectFilter implements ClientResponseFilter {
 
-    private final static Logger log = LoggerFactory.getLogger(FollowRedirectFilter.class);
+    private final static Logger LOG = LogManager.getLogger(FollowRedirectFilter.class);
 
     @Override
     public void filter(ClientRequestContext requestContext, ClientResponseContext responseContext) throws IOException {
@@ -149,7 +189,7 @@ public class RestClient {
         return;
       }
 
-      log.debug("Processing redirect for " + requestContext.getMethod() + " " + requestContext.getUri().toASCIIString() + " to " + responseContext.getLocation().toASCIIString());
+      LOG.debug("Processing redirect for " + requestContext.getMethod() + " " + requestContext.getUri().toASCIIString() + " to " + responseContext.getLocation().toASCIIString());
 
       Client inClient = requestContext.getClient();
       Object entity = requestContext.getEntity();
@@ -174,7 +214,7 @@ public class RestClient {
       responseContext.setStatus(resp.getStatus());
       responseContext.getHeaders().putAll(resp.getStringHeaders());
 
-      log.debug("Processing redirect with result " + resp.getStatus());
+      LOG.debug("Processing redirect with result " + resp.getStatus());
     }
   }
 }

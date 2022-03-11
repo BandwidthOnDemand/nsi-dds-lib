@@ -3,15 +3,15 @@ package net.es.nsi.dds.lib.util;
 import java.io.IOException;
 import java.util.Optional;
 import javax.xml.datatype.XMLGregorianCalendar;
+import net.es.nsi.common.signing.Validate;
+import net.es.nsi.common.util.Decoder;
+import net.es.nsi.common.util.Encoder;
 import net.es.nsi.dds.lib.dao.IllegalArgumentExceptionSupplier;
 import net.es.nsi.dds.lib.jaxb.dds.ContentType;
 import net.es.nsi.dds.lib.jaxb.dds.DocumentType;
 import net.es.nsi.dds.lib.jaxb.dds.ObjectFactory;
-import net.es.nsi.dds.lib.signing.Validate;
-import net.es.nsi.common.util.Decoder;
-import net.es.nsi.common.util.Encoder;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.w3c.dom.Document;
 
 /**
@@ -23,7 +23,7 @@ public class DocumentBuilder {
   public final static String ContentType = "application/x-gzip";
   public final static String ContentTransferEncoding = "base64";
 
-  private final static Logger log = LoggerFactory.getLogger(DocumentBuilder.class);
+  private final static Logger LOG = LogManager.getLogger(DocumentBuilder.class);
   private final ObjectFactory factory = new ObjectFactory();
 
   protected Optional<String> nsaId = Optional.empty();
@@ -92,10 +92,10 @@ public class DocumentBuilder {
     if (sig.isPresent()) {
       try {
         if (!Validate.validateExternal(doc.get(), sig.get())) {
-          log.error("Failed to validate signature.");
+          LOG.error("Failed to validate signature.");
         }
       } catch (Exception ex) {
-        log.error("Failed to validate signature.", ex);
+        LOG.error("Failed to validate signature.", ex);
       }
 
       String sigEncoded = Encoder.encode(sig.get());
@@ -111,7 +111,7 @@ public class DocumentBuilder {
 
   public static Document verify(DocumentType document)
           throws IllegalArgumentException, IOException {
-    log.debug("Verifying document nsaId={}, type={}, id={}", document.getNsa(),
+    LOG.debug("Verifying document nsaId={}, type={}, id={}", document.getNsa(),
             document.getType(), document.getId());
 
     // Get the document contents.
@@ -139,7 +139,7 @@ public class DocumentBuilder {
       try {
         valid = Validate.validateExternal(contentsDecoded, signatureDecoded);
       } catch (Exception ex) {
-        log.error("validateExternal: failed to validate document", ex);
+        LOG.error("validateExternal: failed to validate document", ex);
       }
 
       if (!valid) {

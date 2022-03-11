@@ -1,8 +1,5 @@
 package net.es.nsi.dds.lib.dao;
 
-import java.util.HashMap;
-import java.util.Map;
-
 /**
  *
  * @author hacksaw
@@ -16,6 +13,4 @@ public class KeyStoreType {
   private String password;
   @lombok.Builder.Default
   private String type = "JKS";
-  @lombok.Singular
-  private final Map<String, Object> otherProperties = new HashMap<>();
 }

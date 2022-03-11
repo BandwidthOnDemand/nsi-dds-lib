@@ -12,8 +12,4 @@ public class SecureType {
   private KeyStoreType keyStore;
   private KeyStoreType trustStore;
   private boolean production;
-
-  public boolean isProduction() {
-    return production;
-  }
 }

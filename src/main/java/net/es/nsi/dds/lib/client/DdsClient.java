@@ -1,19 +1,25 @@
 package net.es.nsi.dds.lib.client;
 
 import com.google.common.base.Strings;
+import jakarta.ws.rs.client.Entity;
+import jakarta.ws.rs.client.WebTarget;
+import jakarta.ws.rs.core.HttpHeaders;
+import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.Response.Status;
+import jakarta.xml.bind.JAXBException;
 import java.io.IOException;
+import java.security.KeyManagementException;
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
+import java.security.NoSuchProviderException;
+import java.security.UnrecoverableKeyException;
+import java.security.cert.CertificateException;
 import java.util.Date;
 import java.util.Optional;
 import java.util.stream.Collectors;
-import javax.ws.rs.client.Entity;
-import javax.ws.rs.client.WebTarget;
-import javax.ws.rs.core.HttpHeaders;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.Response.Status;
-import javax.xml.bind.JAXBException;
-import lombok.extern.slf4j.Slf4j;
 import net.es.nsi.common.constants.Nsi;
 import net.es.nsi.common.util.UrlHelper;
+import net.es.nsi.dds.lib.dao.SecureType;
 import net.es.nsi.dds.lib.jaxb.DdsParser;
 import net.es.nsi.dds.lib.jaxb.dds.DocumentEventType;
 import net.es.nsi.dds.lib.jaxb.dds.DocumentListType;
@@ -26,16 +32,29 @@ import net.es.nsi.dds.lib.jaxb.dds.SubscriptionListType;
 import net.es.nsi.dds.lib.jaxb.dds.SubscriptionRequestType;
 import net.es.nsi.dds.lib.jaxb.dds.SubscriptionType;
 import org.apache.http.client.utils.DateUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * TODO: Instantiate this client in the context of a DDS service.
  *
  * @author hacksaw
  */
-@Slf4j
 public class DdsClient extends RestClient {
-
+  private final Logger LOG = LogManager.getLogger(getClass());
   private final ObjectFactory FACTORY = new ObjectFactory();
+
+  public DdsClient() throws KeyStoreException, IOException, NoSuchAlgorithmException, CertificateException,
+          KeyManagementException, UnrecoverableKeyException, NoSuchProviderException {
+    super();
+  }
+
+  public DdsClient(int maxConnPerRoute, int maxConnTotal, SecureType secure) throws KeyStoreException, IOException,
+          NoSuchAlgorithmException, CertificateException, KeyManagementException, UnrecoverableKeyException,
+          NoSuchProviderException {
+
+    super(maxConnPerRoute, maxConnTotal, secure);
+  }
 
   public DocumentsResult getDocuments(String baseURL) {
     WebTarget webTarget = this.get().target(baseURL).path("documents");
@@ -70,15 +89,15 @@ public class DdsClient extends RestClient {
                 (System.currentTimeMillis() / 1000) * 1000 : response.getLastModified().getTime());
         result.setDocument(response.readEntity(DocumentType.class));
       } else {
-        log.error("DdsClient] Failed to retrieve document = {}, result = {}",
+        LOG.error("DdsClient] Failed to retrieve document = {}, result = {}",
                 webTarget.getUri().toASCIIString(), response.getStatusInfo().getReasonPhrase());
         Optional<ErrorType> error = Optional.ofNullable(response.readEntity(ErrorType.class));
         if (error.isPresent()) {
-          log.error("[DdsClient] GET failed for href={}, error={}.", webTarget.getUri().toASCIIString(), error.get().getLabel());
+          LOG.error("[DdsClient] GET failed for href={}, error={}.", webTarget.getUri().toASCIIString(), error.get().getLabel());
         }
       }
     } catch (Exception ex) {
-      log.error("[DdsClient] GET failed for href={}, ex={}", webTarget.getUri().toASCIIString(), ex);
+      LOG.error("[DdsClient] GET failed for href={}, ex={}", webTarget.getUri().toASCIIString(), ex);
       result.setStatus(Status.INTERNAL_SERVER_ERROR);
     } finally {
       optional.ifPresent(r -> r.close());
@@ -105,15 +124,15 @@ public class DdsClient extends RestClient {
                 .stream()
                 .collect(Collectors.toList()));
       } else {
-        log.error("DdsClient] Failed to retrieve list of documents = {}, result = {}",
+        LOG.error("DdsClient] Failed to retrieve list of documents = {}, result = {}",
                 webTarget.getUri().toASCIIString(), response.getStatusInfo().getReasonPhrase());
         Optional<ErrorType> error = Optional.ofNullable(response.readEntity(ErrorType.class));
         if (error.isPresent()) {
-          log.error("[DdsClient] GET failed for href={}, error={}.", webTarget.getUri().toASCIIString(), error.get().getLabel());
+          LOG.error("[DdsClient] GET failed for href={}, error={}.", webTarget.getUri().toASCIIString(), error.get().getLabel());
         }
       }
     } catch (Exception ex) {
-      log.error("[DdsClient] GET failed for href={}, ex={}", webTarget.getUri().toASCIIString(), ex);
+      LOG.error("[DdsClient] GET failed for href={}, ex={}", webTarget.getUri().toASCIIString(), ex);
       result.setStatus(Status.INTERNAL_SERVER_ERROR);
     } finally {
       optional.ifPresent(r -> r.close());
@@ -162,17 +181,17 @@ public class DdsClient extends RestClient {
                 .stream()
                 .collect(Collectors.toList()));
       } else {
-        log.error("DdsClient] Failed to retrieve list of subscriptions {}, result = {}",
+        LOG.error("DdsClient] Failed to retrieve list of subscriptions {}, result = {}",
                 baseURL, response.getStatusInfo().getReasonPhrase());
         Optional<ErrorType> error = Optional.ofNullable(response.readEntity(ErrorType.class));
         if (error.isPresent()) {
-          log.error("[DdsClient] Subscription get failed, href={}, error={}.", webTarget.getUri().toASCIIString(), error.get().getLabel());
+          LOG.error("[DdsClient] Subscription get failed, href={}, error={}.", webTarget.getUri().toASCIIString(), error.get().getLabel());
         } else {
-          log.error("[DdsClient] Subscription get failed, href={}, reason={}.", webTarget.getUri().toASCIIString(), response.getStatusInfo().getReasonPhrase());
+          LOG.error("[DdsClient] Subscription get failed, href={}, reason={}.", webTarget.getUri().toASCIIString(), response.getStatusInfo().getReasonPhrase());
         }
       }
     } catch (Exception ex) {
-      log.error("[DdsClient] GET failed for href={}, ex={}", webTarget.getUri().toASCIIString(), ex);
+      LOG.error("[DdsClient] GET failed for href={}, ex={}", webTarget.getUri().toASCIIString(), ex);
       result.setStatus(Status.INTERNAL_SERVER_ERROR);
     } finally {
       optional.ifPresent(r -> r.close());
@@ -234,17 +253,17 @@ public class DdsClient extends RestClient {
           result.setLastModified((lastModified.getTime() / 1000) * 1000);
         }
       } else {
-        log.error("DdsClient] Failed to retrieve subscription {}, result = {}",
+        LOG.error("DdsClient] Failed to retrieve subscription {}, result = {}",
                 url, response.getStatusInfo().getReasonPhrase());
         Optional<ErrorType> error = Optional.ofNullable(response.readEntity(ErrorType.class));
         if (error.isPresent()) {
-          log.error("[DdsClient] Subscription get failed, href={}, error={}.", webTarget.getUri().toASCIIString(), error.get().getLabel());
+          LOG.error("[DdsClient] Subscription get failed, href={}, error={}.", webTarget.getUri().toASCIIString(), error.get().getLabel());
         } else {
-          log.error("[DdsClient] Subscription get failed, href={}, reason={}.", webTarget.getUri().toASCIIString(), response.getStatusInfo().getReasonPhrase());
+          LOG.error("[DdsClient] Subscription get failed, href={}, reason={}.", webTarget.getUri().toASCIIString(), response.getStatusInfo().getReasonPhrase());
         }
       }
     } catch (Exception ex) {
-      log.error("[DdsClient] GET failed for href={}, ex={}", webTarget.getUri().toASCIIString(), ex);
+      LOG.error("[DdsClient] GET failed for href={}, ex={}", webTarget.getUri().toASCIIString(), ex);
       result.setStatus(Status.INTERNAL_SERVER_ERROR);
     } finally {
       optional.ifPresent(r -> r.close());
@@ -281,7 +300,7 @@ public class DdsClient extends RestClient {
     try {
       encoded = DdsParser.getInstance().subscriptionRequest2Xml(request);
     } catch (JAXBException | IOException ex) {
-      log.error("[DdsClient] error rencoding subscription request on endpoint {}", baseURL, ex);
+      LOG.error("[DdsClient] error rencoding subscription request on endpoint {}", baseURL, ex);
       return result;
     }
 
@@ -303,21 +322,21 @@ public class DdsClient extends RestClient {
                 (System.currentTimeMillis() / 1000) * 1000 : response.getLastModified().getTime());
         result.setSubscription(response.readEntity(SubscriptionType.class));
       } else {
-        log.error("[DdsClient] failed to create subscription {}, result = {}",
+        LOG.error("[DdsClient] failed to create subscription {}, result = {}",
                 baseURL, response.getStatusInfo().getReasonPhrase());
 
         Optional<ErrorType> error = Optional.ofNullable(response.readEntity(ErrorType.class));
         if (error.isPresent()) {
-          log.error("[DdsClient] Add of subscription failed, id={}, label={}, resource={}, description={}",
+          LOG.error("[DdsClient] Add of subscription failed, id={}, label={}, resource={}, description={}",
                   error.get().getId(), error.get().getLabel(), error.get().getResource(),
                   error.get().getDescription());
         } else {
-          log.error("[DdsClient] Add of subscription failed, endpoint={}, reason={}",
+          LOG.error("[DdsClient] Add of subscription failed, endpoint={}, reason={}",
                   baseURL, response.getStatusInfo().getReasonPhrase());
         }
       }
     } catch (Exception ex) {
-      log.error("[DdsClient] error subscribing on endpoint {}", baseURL, ex);
+      LOG.error("[DdsClient] error subscribing on endpoint {}", baseURL, ex);
       result.setStatus(Status.INTERNAL_SERVER_ERROR);
     } finally {
       optional.ifPresent(r -> r.close());
@@ -360,21 +379,21 @@ public class DdsClient extends RestClient {
                 .filter(s -> (!id.equalsIgnoreCase(s.getId())))
                 .map(s -> {
                   // Found one we need to remove.
-                  log.debug("[DdsClient] found stale subscription {} on DDS {}", s.getHref(),
+                  LOG.debug("[DdsClient] found stale subscription {} on DDS {}", s.getHref(),
                           webTarget.getUri().toASCIIString());
                   unsubscribe(baseURL, s.getHref());
                   return s;
                 }).collect(Collectors.toList()));
       } else {
-        log.error("DdsClient] Failed to retrieve list of subscriptions {}, result = {}",
+        LOG.error("DdsClient] Failed to retrieve list of subscriptions {}, result = {}",
                 webTarget.getUri().toASCIIString(), response.getStatusInfo().getReasonPhrase());
         ErrorType error = response.readEntity(ErrorType.class);
         if (error != null) {
-          log.error("[DdsClient] operation returned, error={}.", error.getId());
+          LOG.error("[DdsClient] operation returned, error={}.", error.getId());
         }
       }
     } catch (Exception ex) {
-      log.error("[DdsClient] GET failed for href={}, ex={}", webTarget.getUri().toASCIIString(), ex);
+      LOG.error("[DdsClient] GET failed for href={}, ex={}", webTarget.getUri().toASCIIString(), ex);
     }
     finally {
       optional.ifPresent(r -> r.close());
@@ -414,21 +433,21 @@ public class DdsClient extends RestClient {
         result.setLastModified(response.getLastModified() == null ?
                 (System.currentTimeMillis() / 1000) * 1000 : response.getLastModified().getTime());
       } else {
-        log.error("[DdsClient] failed to delete subscription {}, result = {}",
+        LOG.error("[DdsClient] failed to delete subscription {}, result = {}",
                 url, response.getStatusInfo().getReasonPhrase());
 
         Optional<ErrorType> error = Optional.ofNullable(response.readEntity(ErrorType.class));
         if (error.isPresent()) {
-          log.error("[DdsClient] Delete of subscription failed, id={}, label={}, resource={}, description={}",
+          LOG.error("[DdsClient] Delete of subscription failed, id={}, label={}, resource={}, description={}",
                   error.get().getId(), error.get().getLabel(), error.get().getResource(),
                   error.get().getDescription());
         } else {
-          log.error("[DdsClient] Delete of subscription failed, endpoint={}, reason={}",
+          LOG.error("[DdsClient] Delete of subscription failed, endpoint={}, reason={}",
                   url, response.getStatusInfo().getReasonPhrase());
         }
       }
     } catch (Exception ex) {
-      log.error("[DdsClient] DELETE failed for href={}, ex={}", url, ex);
+      LOG.error("[DdsClient] DELETE failed for href={}, ex={}", url, ex);
       result.setStatus(Status.INTERNAL_SERVER_ERROR);
     }
     finally {
@@ -452,7 +471,7 @@ public class DdsClient extends RestClient {
     try {
       optional = Optional.ofNullable(this.get().target(url).request(Nsi.NSI_DDS_V1_XML).delete());
     } catch (Exception ex) {
-      log.error("[DdsClient] DELETED failed for href={}, ex={}", url, ex);
+      LOG.error("[DdsClient] DELETED failed for href={}, ex={}", url, ex);
     }
     finally {
       optional.ifPresent(r -> {

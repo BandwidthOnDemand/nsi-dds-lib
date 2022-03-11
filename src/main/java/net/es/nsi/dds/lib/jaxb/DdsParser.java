@@ -1,9 +1,9 @@
 package net.es.nsi.dds.lib.jaxb;
 
+import jakarta.xml.bind.JAXBElement;
+import jakarta.xml.bind.JAXBException;
 import java.io.IOException;
 import java.io.InputStream;
-import javax.xml.bind.JAXBElement;
-import javax.xml.bind.JAXBException;
 import net.es.nsi.common.jaxb.JaxbParser;
 import net.es.nsi.dds.lib.jaxb.dds.CollectionType;
 import net.es.nsi.dds.lib.jaxb.dds.DocumentListType;
@@ -23,7 +23,7 @@ import net.es.nsi.dds.lib.jaxb.dds.SubscriptionType;
 public class DdsParser extends JaxbParser {
 
   private static final String PACKAGES = "net.es.nsi.dds.lib.jaxb.dds:net.es.nsi.common.jaxb.nsa" +
-          ":net.es.nsi.common.jaxb.nml:net.es.nsi.common.jaxb.nmwg";
+          ":net.es.nsi.common.jaxb.nml:net.es.nsi.common.jaxb.signatures";
   private static final ObjectFactory factory = new ObjectFactory();
 
   private DdsParser() {
