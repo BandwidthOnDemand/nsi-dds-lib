@@ -106,6 +106,8 @@ public enum HttpsContext {
     }
 
     keyStore.setFile(getAbsolutePath(basedir, keyStore.getFile()));
+    LOG.debug("[HttpsContext].load: keyStore " + keyStore.getFile());
+    config.setKeyStore(keyStore);
 
     KeyStoreType trustStore = config.getTrustStore();
     if (trustStore == null) {
@@ -117,6 +119,8 @@ public enum HttpsContext {
     }
 
     trustStore.setFile(getAbsolutePath(basedir, trustStore.getFile()));
+    LOG.debug("[HttpsContext].load: trustStore " + trustStore.getFile());
+    config.setTrustStore(trustStore);
 
     // Initialize the SSL context.
     sslContext = initContext(config);
