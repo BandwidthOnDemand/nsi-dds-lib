@@ -63,6 +63,24 @@ public class DdsClient extends RestClient {
     super(maxConnPerRoute, maxConnTotal, secure);
   }
 
+  public DocumentsResult getPing(String baseURL) {
+    DocumentsResult result = new DocumentsResult();
+    Response response = null;
+    try {
+      response = this.get().target(baseURL).path("ping").request(Nsi.NSI_DDS_V1_XML).get();
+      result.setStatus(Status.fromStatusCode(response.getStatus()));
+    } catch (Exception ex) {
+      LOG.error("[DdsClient] GET failed for href={}, ex={}", baseURL + "/" + "ping", ex);
+      result.setStatus(Status.INTERNAL_SERVER_ERROR);
+    } finally {
+      if (response != null) {
+        response.close();
+      }
+    }
+
+    return result;
+  }
+
   public DocumentsResult getDocuments(String baseURL) {
     WebTarget webTarget = this.get().target(baseURL).path("documents");
 
@@ -131,7 +149,7 @@ public class DdsClient extends RestClient {
                 .stream()
                 .collect(Collectors.toList()));
       } else {
-        LOG.error("DdsClient] Failed to retrieve list of documents = {}, result = {}",
+        LOG.error("[DdsClient] Failed to retrieve list of documents = {}, result = {}",
                 webTarget.getUri().toASCIIString(), response.getStatusInfo().getReasonPhrase());
         Optional<ErrorType> error = Optional.ofNullable(response.readEntity(ErrorType.class));
         if (error.isPresent()) {
