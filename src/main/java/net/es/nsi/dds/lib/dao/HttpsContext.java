@@ -1,5 +1,6 @@
 package net.es.nsi.dds.lib.dao;
 
+import com.google.common.base.Strings;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -142,7 +143,9 @@ public enum HttpsContext {
   private String getAbsolutePath(String basedir, String inPath) throws IOException {
     Path outPath = Paths.get(inPath);
     if (!outPath.isAbsolute()) {
-      outPath = Paths.get(basedir, inPath);
+      if (!Strings.isNullOrEmpty(basedir)) {
+        outPath = Paths.get(basedir, inPath);
+      }
     }
 
     return outPath.toRealPath().toString();
