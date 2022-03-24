@@ -1,15 +1,5 @@
 package net.es.nsi.dds.lib.client;
 
-import jakarta.ws.rs.client.Client;
-import jakarta.ws.rs.client.ClientBuilder;
-import jakarta.ws.rs.client.ClientRequestContext;
-import jakarta.ws.rs.client.ClientResponseContext;
-import jakarta.ws.rs.client.ClientResponseFilter;
-import jakarta.ws.rs.client.Entity;
-import jakarta.ws.rs.core.GenericEntity;
-import jakarta.ws.rs.core.MultivaluedMap;
-import jakarta.ws.rs.core.Response;
-import jakarta.xml.bind.JAXBElement;
 import java.io.IOException;
 import java.io.InputStream;
 import java.security.KeyManagementException;
@@ -22,6 +12,16 @@ import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.SSLContext;
+import javax.ws.rs.client.Client;
+import javax.ws.rs.client.ClientBuilder;
+import javax.ws.rs.client.ClientRequestContext;
+import javax.ws.rs.client.ClientResponseContext;
+import javax.ws.rs.client.ClientResponseFilter;
+import javax.ws.rs.client.Entity;
+import javax.ws.rs.core.GenericEntity;
+import javax.ws.rs.core.MultivaluedMap;
+import javax.ws.rs.core.Response;
+import javax.xml.bind.JAXBElement;
 import net.es.nsi.common.constants.Nsi;
 import net.es.nsi.dds.lib.dao.HttpsContext;
 import net.es.nsi.dds.lib.dao.SecureType;
@@ -89,6 +89,16 @@ public class RestClient {
    */
   public RestClient() throws KeyStoreException, IOException, NoSuchAlgorithmException, CertificateException,
           KeyManagementException, UnrecoverableKeyException, NoSuchProviderException {
+    client = getRestClient();
+  }
+
+  public RestClient(int maxConnPerRoute, int maxConnTotal) throws KeyStoreException, IOException,
+          NoSuchAlgorithmException, CertificateException, KeyManagementException, UnrecoverableKeyException,
+          NoSuchProviderException {
+
+    this.maxConnPerRoute = maxConnPerRoute;
+    this.maxConnTotal = maxConnTotal;
+
     client = getRestClient();
   }
 

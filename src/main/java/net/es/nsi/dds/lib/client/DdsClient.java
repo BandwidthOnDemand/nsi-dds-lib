@@ -1,12 +1,6 @@
 package net.es.nsi.dds.lib.client;
 
 import com.google.common.base.Strings;
-import jakarta.ws.rs.client.Entity;
-import jakarta.ws.rs.client.WebTarget;
-import jakarta.ws.rs.core.HttpHeaders;
-import jakarta.ws.rs.core.Response;
-import jakarta.ws.rs.core.Response.Status;
-import jakarta.xml.bind.JAXBException;
 import java.io.IOException;
 import java.security.KeyManagementException;
 import java.security.KeyStoreException;
@@ -17,6 +11,12 @@ import java.security.cert.CertificateException;
 import java.util.Date;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import javax.ws.rs.client.Entity;
+import javax.ws.rs.client.WebTarget;
+import javax.ws.rs.core.HttpHeaders;
+import javax.ws.rs.core.Response;
+import javax.ws.rs.core.Response.Status;
+import javax.xml.bind.JAXBException;
 import net.es.nsi.common.constants.Nsi;
 import net.es.nsi.common.util.UrlHelper;
 import net.es.nsi.dds.lib.dao.SecureType;
@@ -47,6 +47,13 @@ public class DdsClient extends RestClient {
   public DdsClient() throws KeyStoreException, IOException, NoSuchAlgorithmException, CertificateException,
           KeyManagementException, UnrecoverableKeyException, NoSuchProviderException {
     super();
+  }
+
+  public DdsClient(int maxConnPerRoute, int maxConnTotal) throws KeyStoreException, IOException,
+          NoSuchAlgorithmException, CertificateException, KeyManagementException, UnrecoverableKeyException,
+          NoSuchProviderException {
+
+    super(maxConnPerRoute, maxConnTotal);
   }
 
   public DdsClient(int maxConnPerRoute, int maxConnTotal, SecureType secure) throws KeyStoreException, IOException,

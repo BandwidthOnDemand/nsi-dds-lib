@@ -1,6 +1,6 @@
 package net.es.nsi.dds.lib.client;
 
-import jakarta.ws.rs.core.Response.Status;
+import javax.ws.rs.core.Response.Status;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
