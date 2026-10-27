@@ -1,6 +1,10 @@
 package net.es.nsi.dds.lib.dao;
 
 /**
+ * Mutable key/truststore file, password, and format configuration.
+ * The format defaults to {@code JKS}. Paths must identify readable store files.
+ * Treat this object and its generated accessors/string representation as sensitive:
+ * its password is retained as a string and is not redacted by Lombok.
  *
  * @author hacksaw
  */
