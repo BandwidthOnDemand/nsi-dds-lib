@@ -1,11 +1,15 @@
 # NSI DDS client library
 
 `net.es.nsi:dds-lib:2.0.0` is a Java client library for the NSI Document
-Distribution Service. It requires Java 21 and uses `net.es.nsi:common-lib:2.0.0`.
+Distribution Service. It targets Java 17 and uses `net.es.nsi:common-lib:2.0.1`.
+The build and runtime compatibility matrix covers **Java 17, 21, 25, and 27**.
+Other JDK versions are unverified; the library does not reject them at runtime.
 
 ## Building and testing
 
-Use JDK 21 and Maven 3.9 or later; Maven 3.10.0 matches the container build:
+Use one of the supported JDKs and Maven 3.9 or later. Maven 3.10.0 and JDK 21
+match the default development container. Production and test compilation use
+`--release 17`, including when Maven runs on a newer JDK:
 
 ```sh
 mvn --batch-mode --no-transfer-progress clean verify
@@ -22,7 +26,7 @@ Maven dependencies on the classpath:
 mvn --batch-mode --no-transfer-progress dependency:build-classpath \
   -Dmdep.outputFile=target/javadoc-classpath.txt
 rg --files src/main/java -g '*.java' > target/handwritten-sources.txt
-javadoc -quiet -encoding UTF-8 -source 21 -Xdoclint:all,-missing -Werror \
+javadoc -quiet -encoding UTF-8 -source 17 -Xdoclint:all,-missing -Werror \
   -classpath "target/classes:$(cat target/javadoc-classpath.txt)" \
   -d target/apidocs @target/handwritten-sources.txt
 ```
@@ -34,8 +38,57 @@ The Makefile uses `maven:3.10.0-eclipse-temurin-21` and requires Docker. `make b
 runs `clean install` with tests skipped; `make test` includes tests. Both mount
 the checkout and the local Maven cache. Installation is local; it does not publish
 artifacts. GitHub Packages dependencies may require credentials in existing Maven
-settings. Ensure `common-lib:2.0.0` is available from your configured repository or
+settings. Ensure `common-lib:2.0.1` is available from your configured repository or
 local cache; successful resolution from a local cache does not prove publication.
+
+## Compatibility verification
+
+`.github/workflows/java-compatibility.yml` runs independent source builds on
+Temurin 17, 21, 25, and 27 with Maven 3.10.0. Each job runs `clean verify`,
+validates handwritten production/test Javadoc with doclint warnings treated as
+errors, and checks the artifact and resolved dependencies for Java 17 bytecode
+compatibility. Multi-release JAR checks select only entries effective for each
+runtime, so optional newer entries do not invalidate Java 17 support.
+
+A second four-JDK matrix downloads the same JAR and compiled tests built on Java
+17. It restores classes/resources from that JAR into `target/classes` and compiled
+tests/resources into `target/test-classes`, then invokes `surefire:test` directly
+without recompilation. This verifies the Java 17 artifact on every supported
+runtime, in addition to building from source with each JDK. Support is verified
+when all source-build and shared-artifact runtime jobs pass; local checks on one
+JDK alone do not certify the entire matrix. CI targets Linux/Temurin, not every
+OS/JDK-vendor combination.
+
+After a local `clean verify`, run the same static/documentation checks with:
+
+```sh
+mvn --batch-mode --no-transfer-progress dependency:build-classpath \
+  -Dmdep.outputFile=target/compatibility-classpath.txt
+python3 -B -m unittest discover -s .github/scripts -p 'test_*.py'
+python3 -B .github/scripts/compatibility.py bytecode --java 17
+python3 -B .github/scripts/compatibility.py javadoc
+```
+
+The helper uses only Python's standard library. To reproduce shared-artifact
+verification, run its `bundle /absolute/path/java17-runtime.zip` command after a
+Java 17 build. In a clean checkout using each target JDK, run `restore` on that
+archive, resolve the verification classpath, check `bytecode --java VERSION`, and
+run `mvn --batch-mode --no-transfer-progress surefire:test -DfailIfNoTests=true`.
+The restore command refuses populated output directories to prevent stale classes
+from masking a compatibility failure.
+
+CI deliberately avoids Maven dependency caches so package availability is checked
+from a clean repository. The workflow grants only `contents: read` and
+`packages: read` and uses `GITHUB_TOKEN` by default. For common-library packages
+that cannot be read across repositories with that token, configure repository
+secrets `PACKAGES_USERNAME` and `PACKAGES_READ_TOKEN` with the username and a
+read-only package token authorized for the common-library repository. Credentials
+are supplied through environment references in generated Maven settings, never
+committed. A dependency-resolution failure is reported explicitly and fails CI.
+Fork pull requests do not receive these secrets: if package access is unavailable,
+a maintainer must review the change and run full verification on a maintainer
+branch. The workflow does not use `pull_request_target` or silently mark missing
+verification successful. Compatibility checks do not install or publish artifacts.
 
 ## Dependency management
 
@@ -52,7 +105,7 @@ goal; `install` writes to the local repository and `deploy` publishes remotely.
 
 ## Migrating from 1.x
 
-Version 2.0.0 raises the Java minimum from 8 to 21 and changes the public Java API
+The 2.x line raises the Java minimum from 8 to 17 and changes the public Java API
 to Jakarta XML Binding 4 and Jakarta REST 4, with Jersey 4 and Apache HttpClient 5.
 Recompile consumers and update affected imports:
 

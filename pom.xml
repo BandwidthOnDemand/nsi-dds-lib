@@ -15,8 +15,9 @@
   </parent>
 
   <properties>
-    <java.version>21</java.version>
+    <java.version>17</java.version>
     <maven.compiler.release>${java.version}</maven.compiler.release>
+    <maven.compiler.testRelease>${java.version}</maven.compiler.testRelease>
     <jersey.version>4.0.3</jersey.version>
     <jakarta-xml-bind.version>4.0.5</jakarta-xml-bind.version>
     <httpclient5.version>5.6.5</httpclient5.version>
@@ -46,7 +47,7 @@
     <dependency>
       <groupId>net.es.nsi</groupId>
       <artifactId>common-lib</artifactId>
-      <version>2.0.0</version>
+      <version>2.0.1</version>
     </dependency>
 
     <!-- Helper annotations for Getter/Setters and Builders. -->
@@ -193,7 +194,7 @@
             <goals><goal>enforce</goal></goals>
             <configuration>
               <rules>
-                <requireJavaVersion><version>[21,)</version></requireJavaVersion>
+                <requireJavaVersion><version>[17,)</version></requireJavaVersion>
                 <requireMavenVersion><version>[3.9,)</version></requireMavenVersion>
               </rules>
             </configuration>
