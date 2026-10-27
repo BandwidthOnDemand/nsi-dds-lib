@@ -4,17 +4,35 @@ import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.KeyStore;
+import java.security.SecureRandom;
+import java.util.HexFormat;
 import java.util.concurrent.TimeUnit;
 
 /**
  * Creates disposable localhost certificates with the running JDK's keytool.
- * The fixed password is test data; callers own the temporary output directory.
+ * A disposable password is generated once per classloader and shared by fixture
+ * stores and their consumers. Callers own the temporary output directory.
  */
 public final class KeytoolFixture {
-    public static final String PASSWORD = "test-password";
+    private static final String PASSWORD = generatePassword();
     public static final String ALIAS = "fixture";
 
     private KeytoolFixture() {
+    }
+
+    /**
+     * Returns the runtime-generated password shared by this classloader's fixtures.
+     *
+     * @return the same disposable password for every call in this classloader
+     */
+    public static String password() {
+        return PASSWORD;
+    }
+
+    private static String generatePassword() {
+        byte[] bytes = new byte[24];
+        new SecureRandom().nextBytes(bytes);
+        return HexFormat.of().formatHex(bytes);
     }
 
     /** Creates a two-day PKCS12 localhost identity, with bounded keytool execution. */
@@ -26,7 +44,7 @@ public final class KeytoolFixture {
                 "-genkeypair", "-alias", ALIAS, "-keyalg", "RSA", "-keysize", "2048",
                 "-sigalg", "SHA256withRSA", "-dname", "CN=localhost", "-ext", "SAN=dns:localhost",
                 "-validity", "2", "-storetype", "PKCS12", "-keystore", keyStore.toString(),
-                "-storepass", PASSWORD, "-keypass", PASSWORD, "-noprompt")
+                "-storepass", password(), "-keypass", password(), "-noprompt")
                 .redirectErrorStream(true).redirectOutput(log.toFile()).start();
         if (!process.waitFor(20, TimeUnit.SECONDS)) {
             process.destroyForcibly();
@@ -43,11 +61,11 @@ public final class KeytoolFixture {
     public static File createTrustStore(File directory, String name, File keyStoreFile) throws Exception {
         KeyStore source = load(keyStoreFile, "PKCS12");
         KeyStore trust = KeyStore.getInstance("JKS");
-        trust.load(null, PASSWORD.toCharArray());
+        trust.load(null, password().toCharArray());
         trust.setCertificateEntry(ALIAS, source.getCertificate(ALIAS));
         File output = new File(directory, name + ".jks");
         try (var stream = Files.newOutputStream(output.toPath())) {
-            trust.store(stream, PASSWORD.toCharArray());
+            trust.store(stream, password().toCharArray());
         }
         return output;
     }
@@ -56,7 +74,7 @@ public final class KeytoolFixture {
     public static KeyStore load(File file, String type) throws Exception {
         KeyStore store = KeyStore.getInstance(type);
         try (var stream = Files.newInputStream(file.toPath())) {
-            store.load(stream, PASSWORD.toCharArray());
+            store.load(stream, password().toCharArray());
         }
         return store;
     }
