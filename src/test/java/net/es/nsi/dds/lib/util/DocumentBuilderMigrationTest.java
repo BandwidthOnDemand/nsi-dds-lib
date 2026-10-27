@@ -68,7 +68,7 @@ public class DocumentBuilderMigrationTest {
     public void verifiesDetachedSignatureAndRejectsContentTampering() throws Exception {
         Document contents = payload("signed 東京");
         SignatureFactory factory = new SignatureFactory(new KeyStoreHandler(
-                keyStore.toString(), KeytoolFixture.PASSWORD, "PKCS12"));
+                keyStore.toString(), KeytoolFixture.password(), "PKCS12"));
         Document signature = factory.generateExternalSignature(contents, KeytoolFixture.ALIAS);
         DocumentType built = builder(contents).withSignature(signature).build();
         DocumentType roundtrip = DdsParser.getInstance().xml2Document(DdsParser.getInstance().document2Xml(built));
@@ -126,7 +126,7 @@ public class DocumentBuilderMigrationTest {
     public void rejectsTruncatedGzipSignatureBeforeValidation() throws Exception {
         Document contents = payload("signed with complete content");
         SignatureFactory factory = new SignatureFactory(new KeyStoreHandler(
-                keyStore.toString(), KeytoolFixture.PASSWORD, "PKCS12"));
+                keyStore.toString(), KeytoolFixture.password(), "PKCS12"));
         Document signature = factory.generateExternalSignature(contents, KeytoolFixture.ALIAS);
         DocumentType built = builder(contents).withSignature(signature).build();
         assertEquals("signed with complete content",
@@ -170,7 +170,7 @@ public class DocumentBuilderMigrationTest {
     public void rejectsTamperedDetachedSignatureValue() throws Exception {
         Document contents = payload("unchanged signed contents");
         SignatureFactory factory = new SignatureFactory(new KeyStoreHandler(
-                keyStore.toString(), KeytoolFixture.PASSWORD, "PKCS12"));
+                keyStore.toString(), KeytoolFixture.password(), "PKCS12"));
         Document signature = factory.generateExternalSignature(contents, KeytoolFixture.ALIAS);
         DocumentType built = builder(contents).withSignature(signature).build();
         var value = signature.getElementsByTagNameNS(javax.xml.crypto.dsig.XMLSignature.XMLNS, "SignatureValue").item(0);
@@ -184,7 +184,7 @@ public class DocumentBuilderMigrationTest {
     public void detachedSignatureProtectsPayloadRatherThanEnvelopeMetadata() throws Exception {
         Document contents = payload("signed payload");
         SignatureFactory factory = new SignatureFactory(new KeyStoreHandler(
-                keyStore.toString(), KeytoolFixture.PASSWORD, "PKCS12"));
+                keyStore.toString(), KeytoolFixture.password(), "PKCS12"));
         Document signature = factory.generateExternalSignature(contents, KeytoolFixture.ALIAS);
         DocumentType built = builder(contents).withSignature(signature).build();
         built.setNsa("urn:nsa:changed-envelope");

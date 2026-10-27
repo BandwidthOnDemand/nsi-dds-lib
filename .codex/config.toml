@@ -1,0 +1,12 @@
+# Shared repository defaults. Merge into an existing file rather than replacing it.
+# Agent TOMLs in .codex/agents/ are discovered by current Codex local clients.
+model = "gpt-6.1-sol"
+model_reasoning_effort = "medium"
+
+[agents]
+enabled = true
+# Cap open spawned-agent threads, excluding the primary. Do not run every role.
+max_concurrent_threads_per_session = 3
+
+# Each custom agent sets its own model and reasoning effort.
+# Parent-session permissions, approvals, provider, and MCP settings remain inherited.

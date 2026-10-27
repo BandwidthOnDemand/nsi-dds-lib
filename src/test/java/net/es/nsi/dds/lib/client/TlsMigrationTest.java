@@ -71,7 +71,7 @@ public class TlsMigrationTest {
         previousContext = field("sslContext").get(HttpsContext.getInstance());
         previousProduction = field("isProduction").getBoolean(HttpsContext.getInstance());
         KeyManagerFactory keys = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
-        keys.init(KeytoolFixture.load(keyStore, "PKCS12"), KeytoolFixture.PASSWORD.toCharArray());
+        keys.init(KeytoolFixture.load(keyStore, "PKCS12"), KeytoolFixture.password().toCharArray());
         SSLContext context = SSLContext.getInstance("TLS");
         context.init(keys.getKeyManagers(), null, null);
         server = HttpsServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
@@ -162,10 +162,10 @@ public class TlsMigrationTest {
     @Test(timeout = 10000)
     public void jssePropertiesSupplyOmittedStoresAndTypes() throws Exception {
         setProperty("javax.net.ssl.keyStore", keyStore.toString());
-        setProperty("javax.net.ssl.keyStorePassword", KeytoolFixture.PASSWORD);
+        setProperty("javax.net.ssl.keyStorePassword", KeytoolFixture.password());
         setProperty("javax.net.ssl.keyStoreType", "PKCS12");
         setProperty("javax.net.ssl.trustStore", trusted.toString());
-        setProperty("javax.net.ssl.trustStorePassword", KeytoolFixture.PASSWORD);
+        setProperty("javax.net.ssl.trustStorePassword", KeytoolFixture.password());
         setProperty("javax.net.ssl.trustStoreType", "JKS");
         SecureType configuration = SecureType.builder().production(true).build();
         RestClient client = new RestClient(1, 1, configuration);
@@ -268,7 +268,7 @@ public class TlsMigrationTest {
             SSLContext loaded = HttpsContext.getInstance().getSSLContext();
             SSLContext defaultBeforeFailure = SSLContext.getDefault();
             SecureType invalid = configuration(false, trusted);
-            invalid.getKeyStore().setPassword("wrong-password");
+            invalid.getKeyStore().setPassword(KeytoolFixture.password() + "-invalid");
             assertThrows(IOException.class, () -> new RestClient(1, 1, invalid));
             assertSame(loaded, HttpsContext.getInstance().getSSLContext());
             assertSame(defaultBeforeFailure, SSLContext.getDefault());
@@ -341,8 +341,8 @@ public class TlsMigrationTest {
 
     private static SecureType configuration(boolean production, File trust) {
         return SecureType.builder().production(production)
-                .keyStore(KeyStoreType.builder().file(keyStore.toString()).password(KeytoolFixture.PASSWORD).type("PKCS12").build())
-                .trustStore(KeyStoreType.builder().file(trust.toString()).password(KeytoolFixture.PASSWORD).type("JKS").build())
+                .keyStore(KeyStoreType.builder().file(keyStore.toString()).password(KeytoolFixture.password()).type("PKCS12").build())
+                .trustStore(KeyStoreType.builder().file(trust.toString()).password(KeytoolFixture.password()).type("JKS").build())
                 .build();
     }
 
