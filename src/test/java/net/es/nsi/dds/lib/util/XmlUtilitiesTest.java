@@ -8,6 +8,7 @@ import org.junit.Assert;
 import org.junit.Test;
 
 /**
+ * Checks instant equality across equivalent XML calendar offsets and precisions.
  *
  * @author hacksaw
  */

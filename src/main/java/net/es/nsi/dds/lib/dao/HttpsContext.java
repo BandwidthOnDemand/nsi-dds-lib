@@ -30,7 +30,14 @@ import org.bouncycastle.jsse.provider.BouncyCastleJsseProvider;
 import org.glassfish.jersey.SslConfigurator;
 
 /**
- * A singleton to manage the HTTPS security context.
+ * Process-wide mutable HTTPS security context.
+ * Loading a configuration resolves store paths, populates omitted stores from
+ * JSSE properties/defaults, and replaces the process default SSL context.
+ * Initialization also registers Bouncy Castle providers when absent. Direct
+ * callers must coordinate load-and-read sequences on this singleton; secure
+ * {@code RestClient} construction does so when capturing its context. Provider
+ * registration does not force BCJSSE selection: initialization requests the
+ * default provider for the {@code TLS} algorithm.
  *
  * @author hacksaw
  */
@@ -42,18 +49,18 @@ public enum HttpsContext {
   private boolean isProduction;
 
   /**
-   * Construct an HttpConfig object.
+   * Registers the TLS security providers when absent.
    */
   private HttpsContext() {
     LOG.debug("[HttpsContext]: constructor invoked");
 
-    // If the BouncyCastle provider is not register add it in.
+    // Preserve an existing provider registered under the BC name.
     if (Security.getProvider("BC") == null) {
       LOG.debug("Adding BouncyCastleProvider provider");
       Security.addProvider(new BouncyCastleProvider());
     }
 
-    // If the BouncyCastle JSSE provider is not register add it in.
+    // Register BCJSSE without replacing the configured provider preference order.
     if (Security.getProvider("BCJSSE") == null) {
       LOG.debug("Adding BouncyCastleJsseProvider provider");
       Security.addProvider(new BouncyCastleJsseProvider());
@@ -72,17 +79,22 @@ public enum HttpsContext {
   }
 
   /**
-   * Convert security configuration from JAXB configuration file type to something usable by system.
+   * Loads configured stores and installs the resulting default SSL context.
+   * Relative paths resolve against the common library's application base directory
+   * property. This operation populates and normalizes the supplied configuration,
+   * including before TLS initialization succeeds. A failed load leaves the prior
+   * stored/default SSL context in place but need not leave config unchanged.
    *
-   * @param config The JAXB SecureType object containing the TLS configuration information.
+   * @param config mutable TLS configuration; must not be null
    *
-   * @throws KeyManagementException
-   * @throws NoSuchAlgorithmException
-   * @throws NoSuchProviderException
-   * @throws KeyStoreException
-   * @throws IOException
-   * @throws CertificateException
-   * @throws UnrecoverableKeyException
+   * @throws KeyManagementException if the TLS context cannot be initialized
+   * @throws NoSuchAlgorithmException if a required TLS or key algorithm is unavailable
+   * @throws NoSuchProviderException retained by the TLS initialization API
+   * @throws KeyStoreException if a store format is unavailable
+   * @throws IOException if a store path cannot be resolved or read
+   * @throws CertificateException if store certificate data cannot be loaded
+   * @throws UnrecoverableKeyException if a configured key password cannot recover a key
+   * @throws IllegalArgumentException if config is null
    */
   public synchronized void load(SecureType config) throws KeyManagementException, NoSuchAlgorithmException,
           NoSuchProviderException, KeyStoreException, IOException, CertificateException, UnrecoverableKeyException {
@@ -133,12 +145,12 @@ public enum HttpsContext {
   }
 
   /**
-   * Get the absolute path for inPath.
+   * Resolves an existing store file, including symbolic links.
    *
-   * @param basedir
-   * @param inPath
-   * @return
-   * @throws IOException
+   * @param basedir optional application directory for a relative input path
+   * @param inPath configured store path
+   * @return real absolute path
+   * @throws IOException if the resolved path does not exist or is inaccessible
    */
   private String getAbsolutePath(String basedir, String inPath) throws IOException {
     Path outPath = Paths.get(inPath);
@@ -187,10 +199,10 @@ public enum HttpsContext {
       // Initialize the SSL context with key managers.
       ctx.init(keyMgrFact.getKeyManagers(), trustMgrFact.getTrustManagers(), new SecureRandom());
 
-      // Set this newly configured provider as the default provider.
+      // Replace the process default context without changing provider ordering.
       SSLContext.setDefault(ctx);
 
-      // For giggles lets dump the default context.
+      // Emit provider and protocol capabilities only at debug level.
       dumpSSLContext("[HttpsContext].initContext: defaultContext", SslConfigurator.getDefaultContext());
       return ctx;
     } catch (KeyManagementException | NoSuchAlgorithmException | KeyStoreException
@@ -201,14 +213,14 @@ public enum HttpsContext {
   }
 
   /**
-   * Get a instance of a keystore based on requested type and initializes with the provide keystore file.
+   * Loads a configured store and closes the stream opened for it.
    *
-   * @param ks
-   * @return
-   * @throws KeyStoreException
-   * @throws IOException
-   * @throws NoSuchAlgorithmException
-   * @throws CertificateException
+   * @param ks store path, type, and password
+   * @return loaded in-memory store
+   * @throws KeyStoreException if the requested store format is unavailable
+   * @throws IOException if the file cannot be read or its password is invalid
+   * @throws NoSuchAlgorithmException if the store integrity algorithm is unavailable
+   * @throws CertificateException if certificate data cannot be loaded
    */
   private KeyStore getKeyStore(KeyStoreType ks) throws KeyStoreException, IOException, NoSuchAlgorithmException, CertificateException {
     // Open specified keystore.
@@ -247,18 +259,20 @@ public enum HttpsContext {
 
 
   /**
-   * Get the SSL context.
+   * Returns the last successfully loaded context without creating a new one.
+   * Coordinate load-and-read operations on this singleton when used concurrently.
    *
-   * @return New SSLContext for HTTP client.
+   * @return shared context, or null before the first successful load
    */
   public SSLContext getSSLContext() {
     return sslContext;
   }
 
   /**
-   * Is this server configured for production?
+   * Returns the hostname-verification flag from the last successful load.
+   * This getter does not itself enable hostname checks on an HTTP client.
    *
-   * @return true if configured for production.
+   * @return true if the loaded configuration selected production mode
    */
   public boolean isProduction() {
     return isProduction;
