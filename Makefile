@@ -1,4 +1,4 @@
-# Build and test dds-lib with the fixed Maven 3.10.0 / Java 21 container.
+# Build Java 17-compatible dds-lib with the fixed Maven 3.10.0 / JDK 21 container.
 # Targets install only into the mounted local Maven cache; they do not publish.
 
 all:    build

@@ -33,8 +33,9 @@ silently redefining it here.
 - Representative callers: not yet established. Inspect a consuming project's
   declared dependency coordinates and imports before using its behavior as a
   compatibility requirement.
-- CI: no CI workflow configuration is present in this checkout at the time this
-  context was added. Inspect the current tree before relying on that observation.
+- CI entry point: `.github/workflows/java-compatibility.yml`. The stdlib helper
+  `.github/scripts/compatibility.py` checks effective classpath bytecode and
+  handwritten Javadoc, and transfers the Java 17 artifact/tests between jobs.
 - Additional API specifications, module checks, and architectural decision records:
   discover from the task and current tree; none are established by this file.
 

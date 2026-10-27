@@ -19,10 +19,12 @@ rules below add requirements when the user requests a review.
 
 ### Build and dependencies
 
-- The POM targets Java 21 with compiler `release` 21. Preserve Java 21 language
-  and API compatibility; compiling on a newer JDK alone does not establish that
-  compatibility. Check common-library behavior against the resolved dependency,
-  not the sibling checkout.
+- The POM targets Java 17 with compiler `release` 17 for production and tests.
+  Preserve Java 17 language and API compatibility; compiling on a newer JDK alone
+  does not establish runtime compatibility. The build/runtime verification matrix
+  is Java 17, 21, 25, and 27; other versions are unverified. Keep the default
+  development container on JDK 21. Check common-library behavior against the
+  resolved dependency, not the sibling checkout.
 - Run focused tests with
   `mvn --batch-mode --no-transfer-progress -Dtest=ClassName test`, then run
   `mvn --batch-mode --no-transfer-progress clean verify` for final verification of
@@ -32,7 +34,7 @@ rules below add requirements when the user requests a review.
   Docker image and mount the checkout and local Maven cache; there is no
   `MAVEN_IMAGE` override. Inspect Docker prerequisites before using these targets.
 - The Spring Boot 4.1.2 parent manages dependencies; the direct common library is
-  `net.es.nsi:common-lib:2.0.0`. Check compatibility against that resolved artifact,
+  `net.es.nsi:common-lib:2.0.1`. Check compatibility against that resolved artifact,
   not the sibling checkout's APIs or instructions. Upgrades are separate work
   unless explicitly in scope. Preserve public signatures and checked exceptions.
 - Prefer fixed stable versions for dependency changes and existing parent/property
@@ -107,6 +109,12 @@ rules below add requirements when the user requests a review.
   default. For handwritten Javadoc changes, validate it separately with JDK
   Javadoc over handwritten sources, compiled classes and Maven dependencies on the
   classpath, and `-Xdoclint:all,-missing -Werror`.
+- Compatibility changes must pass source builds and strict handwritten main/test
+  Javadoc on Java 17, 21, 25, and 27, plus runtime tests of the same Java 17-built
+  artifact on all four JDKs. Use `.github/scripts/compatibility.py` for MR-aware
+  bytecode, Javadoc, and artifact bundle checks; run its stdlib regression tests
+  when changing it. GitHub Actions performs this matrix without a dependency cache;
+  missing private-package access is a failed prerequisite, not passing coverage.
 - For Markdown or `.codex`-only changes, verify referenced paths and facts, parse
   changed TOML, and check whitespace; a full Maven build is unnecessary. Finish
   changes with `git diff --check` and inspect new, untracked files as well.
