@@ -1,0 +1,43 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:best-practices",
+    "customManagers:mavenPropertyVersions"
+  ],
+  "minimumReleaseAge": "8 days",
+  "internalChecksFilter": "strict",
+  "rebaseWhen": "behind-base-branch",
+  "packageRules": [
+    {
+      "matchUpdateTypes": ["minor", "patch"],
+      "groupName": "all non-major dependencies",
+      "groupSlug": "all-minor-patch",
+      "automerge": true
+    },
+    {
+      "matchUpdateTypes": ["pin", "digest", "pinDigest"],
+      "minimumReleaseAge": "0 days",
+      "automerge": true
+    },
+    {
+      "description": "Review parent and common-library compatibility separately",
+      "matchPackageNames": [
+        "org.springframework.boot:spring-boot-starter-parent",
+        "net.es.nsi:common-lib"
+      ],
+      "groupName": null,
+      "groupSlug": null,
+      "automerge": false
+    },
+    {
+      "matchUpdateTypes": ["major"],
+      "dependencyDashboardApproval": true,
+      "automerge": false
+    },
+    {
+      "description": "Java support levels are maintained with the compatibility matrix",
+      "matchDatasources": ["java-version"],
+      "enabled": false
+    }
+  ]
+}
