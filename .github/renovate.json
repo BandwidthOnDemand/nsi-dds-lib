@@ -20,11 +20,8 @@
       "automerge": true
     },
     {
-      "description": "Review parent and common-library compatibility separately",
-      "matchPackageNames": [
-        "org.springframework.boot:spring-boot-starter-parent",
-        "net.es.nsi:common-lib"
-      ],
+      "description": "Review parent compatibility separately",
+      "matchPackageNames": ["org.springframework.boot:spring-boot-starter-parent"],
       "groupName": null,
       "groupSlug": null,
       "automerge": false
@@ -37,6 +34,11 @@
     {
       "description": "Java support levels are maintained with the compatibility matrix",
       "matchDatasources": ["java-version"],
+      "enabled": false
+    },
+    {
+      "description": "Only on GitHub Packages, which Renovate cannot read",
+      "matchPackageNames": ["net.es.nsi:**"],
       "enabled": false
     }
   ]

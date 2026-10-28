@@ -107,7 +107,7 @@ Renovate uses [`.github/renovate.json`](.github/renovate.json), following the
 `nsi-dds` and `nsi-pce` policy: releases wait eight days, minor/patch updates are
 grouped for automerge after required checks pass, and pin/digest updates have no
 release-age delay. Branches are rebased when behind the base branch. Spring Boot
-and `common-lib` updates have separate PRs that require manual merging. Major
+updates have a separate PR that requires manual merging. Major
 upgrades require approval in the Dependency Dashboard before PR creation and
 manual merging afterward. Use that dashboard to review pending updates, lookup
 errors, and release-age holds.
@@ -124,12 +124,11 @@ in custom extraction.
 Before enabling Renovate, include this repository in the organization's existing
 Renovate app/runner and ensure the compatibility workflow is on the default
 branch. Configure all eight source-build and shared-artifact runtime checks as
-required checks, and enable repository auto-merge for platform automerge. Give
-Renovate read access to the private `common-lib` package using the organization's
-Renovate credential mechanism; CI's `PACKAGES_USERNAME`/`PACKAGES_READ_TOKEN`
-secrets do not automatically authenticate Renovate. Keep credentials out of this
-configuration. Confirm private-package lookup and release timestamps in the first
-run: missing timestamps can hold updates under the release-age policy.
+required checks, and enable repository auto-merge for platform automerge.
+
+Renovate skips `net.es.nsi` artifacts: they are only on GitHub Packages, which it
+cannot read, and a rate-limited Central lookup for them aborts the run. Update
+`common-lib` by hand.
 
 Validate configuration changes with a supported Renovate/Node installation:
 
