@@ -18,22 +18,35 @@
     <java.version>17</java.version>
     <maven.compiler.release>${java.version}</maven.compiler.release>
     <maven.compiler.testRelease>${java.version}</maven.compiler.testRelease>
+    <!-- renovate: datasource=maven depName=org.glassfish.jersey:jersey-bom -->
     <jersey.version>4.0.3</jersey.version>
+    <!-- renovate: datasource=maven depName=jakarta.xml.bind:jakarta.xml.bind-api -->
     <jakarta-xml-bind.version>4.0.5</jakarta-xml-bind.version>
+    <!-- renovate: datasource=maven depName=org.apache.httpcomponents.client5:httpclient5 -->
     <httpclient5.version>5.6.5</httpclient5.version>
     <bouncycastle.version>1.86</bouncycastle.version>
     <!-- TLS has its own patch releases; bcprov/bcpkix/bcutil remain at 1.86. -->
     <bouncycastle-tls.version>1.86.2</bouncycastle-tls.version>
     <lombok.version>1.18.48</lombok.version>
+    <!-- renovate: datasource=maven depName=com.google.code.gson:gson -->
     <gson.version>2.15.0</gson.version>
+    <!-- renovate: datasource=maven depName=org.apache.logging.log4j:log4j-bom -->
     <log4j2.version>2.26.1</log4j2.version>
+    <!-- renovate: datasource=maven depName=org.apache.maven.plugins:maven-compiler-plugin -->
     <maven-compiler-plugin.version>3.16.0</maven-compiler-plugin.version>
+    <!-- renovate: datasource=maven depName=org.apache.maven.plugins:maven-surefire-plugin -->
     <maven-surefire-plugin.version>3.6.1</maven-surefire-plugin.version>
+    <!-- renovate: datasource=maven depName=org.apache.maven.plugins:maven-failsafe-plugin -->
     <maven-failsafe-plugin.version>3.6.1</maven-failsafe-plugin.version>
+    <!-- renovate: datasource=maven depName=org.apache.maven.plugins:maven-clean-plugin -->
     <maven-clean-plugin.version>3.5.0</maven-clean-plugin.version>
+    <!-- renovate: datasource=maven depName=org.apache.maven.plugins:maven-enforcer-plugin -->
     <maven-enforcer-plugin.version>3.6.3</maven-enforcer-plugin.version>
+    <!-- renovate: datasource=maven depName=org.apache.maven.plugins:maven-install-plugin -->
     <maven-install-plugin.version>3.2.0</maven-install-plugin.version>
+    <!-- renovate: datasource=maven depName=org.apache.maven.plugins:maven-deploy-plugin -->
     <maven-deploy-plugin.version>3.2.0</maven-deploy-plugin.version>
+    <!-- renovate: datasource=maven depName=org.codehaus.mojo:versions-maven-plugin -->
     <versions-maven-plugin.version>2.23.0</versions-maven-plugin.version>
     <project.scm.id>github</project.scm.id>
     <!-- Validate handwritten Javadoc separately with compiled models on the classpath. -->

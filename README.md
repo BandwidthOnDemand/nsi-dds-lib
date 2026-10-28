@@ -103,6 +103,47 @@ version to every BC artifact. Maven Install and Deploy plugins are pinned at
 3.2.0. `clean verify` builds and tests without running either publication-related
 goal; `install` writes to the local repository and `deploy` publishes remotely.
 
+Renovate uses [`.github/renovate.json`](.github/renovate.json), following the
+`nsi-dds` and `nsi-pce` policy: releases wait eight days, minor/patch updates are
+grouped for automerge after required checks pass, and pin/digest updates have no
+release-age delay. Branches are rebased when behind the base branch. Spring Boot
+and `common-lib` updates have separate PRs that require manual merging. Major
+upgrades require approval in the Dependency Dashboard before PR creation and
+manual merging afterward. Use that dashboard to review pending updates, lookup
+errors, and release-age holds.
+
+The Maven-property preset reads the `renovate:` comments above version overrides
+that are consumed only by the external parent. Keep those mappings with their
+properties; versions referenced directly in this POM use the native Maven
+manager. The Bouncy Castle provider/PKIX and TLS properties remain independent.
+Java runtime updates are disabled: changes to the Java 17 baseline, the
+17/21/25/27 matrix, and the fixed Maven 3.10.0/JDK 21 development toolchain must
+be maintained together. The Makefile image and Maven installer are not included
+in custom extraction.
+
+Before enabling Renovate, include this repository in the organization's existing
+Renovate app/runner and ensure the compatibility workflow is on the default
+branch. Configure all eight source-build and shared-artifact runtime checks as
+required checks, and enable repository auto-merge for platform automerge. Give
+Renovate read access to the private `common-lib` package using the organization's
+Renovate credential mechanism; CI's `PACKAGES_USERNAME`/`PACKAGES_READ_TOKEN`
+secrets do not automatically authenticate Renovate. Keep credentials out of this
+configuration. Confirm private-package lookup and release timestamps in the first
+run: missing timestamps can hold updates under the release-age policy.
+
+Validate configuration changes with a supported Renovate/Node installation:
+
+```sh
+renovate-config-validator --strict --no-global .github/renovate.json
+```
+
+Also check a read-only extraction/lookup dry run for all intended Maven properties
+and GitHub Actions, without duplicate property ownership. Dependency updates must
+pass the full compatibility matrix described above. See Renovate's
+[Maven-property preset](https://docs.renovatebot.com/presets-customManagers/#custommanagersmavenpropertyversions),
+[validation guidance](https://docs.renovatebot.com/config-validation/), and
+[private-package setup](https://docs.renovatebot.com/getting-started/private-packages/).
+
 ## Migrating from 1.x
 
 The 2.x line raises the Java minimum from 8 to 17 and changes the public Java API
