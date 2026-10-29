@@ -57,14 +57,14 @@ jobs:
       - name: Bundle the Java 17 artifact and compiled tests
         if: matrix.java == 17
         run: python3 -B .github/scripts/compatibility.py bundle target/java17-runtime.zip
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         if: matrix.java == 17
         with:
           name: java17-runtime
           path: target/java17-runtime.zip
           if-no-files-found: error
           retention-days: 7
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         if: always()
         with:
           name: source-build-reports-${{ matrix.java }}
@@ -97,7 +97,7 @@ jobs:
           server-password: PACKAGE_TOKEN
       - name: Install Maven 3.10.0
         run: bash .github/scripts/setup-maven.sh
-      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
         with:
           name: java17-runtime
           path: runtime-bundle
@@ -114,7 +114,7 @@ jobs:
         run: python3 -B .github/scripts/compatibility.py bytecode --java ${{ matrix.java }}
       - name: Run the Java 17-compiled tests without recompiling
         run: mvn --batch-mode --no-transfer-progress surefire:test -DfailIfNoTests=true
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         if: always()
         with:
           name: runtime-reports-${{ matrix.java }}
