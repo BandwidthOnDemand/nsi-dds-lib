@@ -47,7 +47,7 @@
     <!-- renovate: datasource=maven depName=org.apache.maven.plugins:maven-deploy-plugin -->
     <maven-deploy-plugin.version>3.2.0</maven-deploy-plugin.version>
     <!-- renovate: datasource=maven depName=org.codehaus.mojo:versions-maven-plugin -->
-    <versions-maven-plugin.version>2.24.0</versions-maven-plugin.version>
+    <versions-maven-plugin.version>2.25.1</versions-maven-plugin.version>
     <project.scm.id>github</project.scm.id>
     <!-- Validate handwritten Javadoc separately with compiled models on the classpath. -->
     <maven.javadoc.skip>true</maven.javadoc.skip>
@@ -218,7 +218,7 @@
       <plugin>
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>jaxb2-maven-plugin</artifactId>
-        <version>4.2.0</version>
+        <version>4.3.0</version>
         <executions>
           <!-- Generate the DDS schema model. -->
           <execution>
