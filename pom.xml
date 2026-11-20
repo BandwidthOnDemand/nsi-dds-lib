@@ -24,9 +24,9 @@
     <jakarta-xml-bind.version>4.0.5</jakarta-xml-bind.version>
     <!-- renovate: datasource=maven depName=org.apache.httpcomponents.client5:httpclient5 -->
     <httpclient5.version>5.6.5</httpclient5.version>
-    <bouncycastle.version>1.86</bouncycastle.version>
+    <bouncycastle.version>1.87</bouncycastle.version>
     <!-- TLS has its own patch releases; bcprov/bcpkix/bcutil remain at 1.86. -->
-    <bouncycastle-tls.version>1.86.2</bouncycastle-tls.version>
+    <bouncycastle-tls.version>1.87</bouncycastle-tls.version>
     <lombok.version>1.18.48</lombok.version>
     <!-- renovate: datasource=maven depName=com.google.code.gson:gson -->
     <gson.version>2.15.0</gson.version>
